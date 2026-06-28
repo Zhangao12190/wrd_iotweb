@@ -43,19 +43,28 @@ if [ -z "${JWT_SECRET:-}" ]; then
 fi
 
 mkdir -p "$(dirname "$APP_DIR")"
-if [ -d "$APP_DIR/.git" ]; then
+if [ -f "$APP_DIR/Dockerfile" ] && [ "${SKIP_CLONE:-}" = "1" ]; then
+  echo "跳过克隆，使用已有代码: $APP_DIR"
+elif [ -d "$APP_DIR/.git" ]; then
   echo "更新代码: $APP_DIR ($BRANCH)"
   git -C "$APP_DIR" fetch origin
   git -C "$APP_DIR" checkout "$BRANCH"
   git -C "$APP_DIR" pull origin "$BRANCH"
+elif [ -f "$APP_DIR/Dockerfile" ]; then
+  echo "使用已有代码目录: $APP_DIR"
 else
-  echo "克隆仓库到 $APP_DIR"
-  if ! git clone --branch "$BRANCH" "$REPO_URL" "$APP_DIR"; then
-    echo ""
-    echo "git clone 失败。若仓库为私有，请设置 GitHub Personal Access Token 后重试:"
-    echo "  export GITHUB_TOKEN=<你的 token>"
-    echo "  $0"
-    exit 1
+  SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+  if [ -f "$SCRIPT_DIR/fetch-repo.sh" ]; then
+    APP_DIR="$APP_DIR" REPO_SLUG="$REPO_SLUG" BRANCH="$BRANCH" GITHUB_TOKEN="${GITHUB_TOKEN:-}" bash "$SCRIPT_DIR/fetch-repo.sh"
+  else
+    echo "克隆仓库到 $APP_DIR"
+    if ! git -c http.postBuffer=524288000 -c http.version=HTTP/1.1 clone --depth 1 --branch "$BRANCH" "$REPO_URL" "$APP_DIR"; then
+      echo ""
+      echo "git clone 失败（国内服务器常见 GnuTLS -110）。请尝试:"
+      echo "  export GITHUB_TOKEN=<token> && bash deploy/self-hosted/fetch-repo.sh"
+      echo "  或本地上传: scp -r wrd_iotweb root@<IP>:/opt/wrd-iot"
+      exit 1
+    fi
   fi
 fi
 

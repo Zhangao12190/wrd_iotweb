@@ -125,6 +125,80 @@ docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compo
 
 ---
 
+## 网络问题排查（GnuTLS -110 / 无法连接 GitHub）
+
+国内腾讯云服务器访问 GitHub HTTPS 常出现：
+
+```text
+GnuTLS recv error (-110): The TLS connection was non-properly terminated.
+```
+
+按优先级尝试：
+
+### 方案 A：SSH 走 443 端口（推荐）
+
+在服务器执行：
+
+```bash
+sudo apt-get update && sudo apt-get install -y git curl unzip
+curl -fsSL https://get.docker.com | sudo sh
+
+# 生成密钥并显示公钥
+ssh-keygen -t ed25519 -N "" -f ~/.ssh/github_deploy -q
+cat ~/.ssh/github_deploy.pub
+```
+
+复制公钥 → GitHub 仓库 **Settings → Deploy keys → Add deploy key**（只勾 Read）。
+
+然后：
+
+```bash
+mkdir -p ~/.ssh && chmod 700 ~/.ssh
+cat >>~/.ssh/config <<'EOF'
+Host github.com
+  Hostname ssh.github.com
+  Port 443
+  User git
+EOF
+ssh-keyscan -p 443 ssh.github.com >> ~/.ssh/known_hosts 2>/dev/null
+
+GIT_SSH_COMMAND="ssh -i ~/.ssh/github_deploy" \
+  git clone --depth 1 git@github.com:Zhangao12190/wrd_iotweb.git /opt/wrd-iot
+
+cd /opt/wrd-iot
+sudo chmod +x deploy/self-hosted/deploy.sh
+sudo SKIP_CLONE=1 HOST_PORT=9111 ./deploy/self-hosted/deploy.sh
+```
+
+### 方案 B：从你本地电脑上传（最稳）
+
+在你**本地电脑**（能访问 GitHub 的机器）执行：
+
+```bash
+git clone https://github.com/Zhangao12190/wrd_iotweb.git
+scp -r wrd_iotweb root@122.51.242.230:/opt/wrd-iot
+```
+
+服务器上：
+
+```bash
+cd /opt/wrd-iot
+curl -fsSL https://get.docker.com | sudo sh
+sudo chmod +x deploy/self-hosted/deploy.sh
+sudo SKIP_CLONE=1 HOST_PORT=9111 ./deploy/self-hosted/deploy.sh
+```
+
+### 方案 C：临时公开仓库 + 国内镜像
+
+GitHub 仓库 Settings → 改为 Public，然后服务器：
+
+```bash
+git clone https://gitclone.com/github.com/Zhangao12190/wrd_iotweb.git /opt/wrd-iot
+cd /opt/wrd-iot && sudo SKIP_CLONE=1 HOST_PORT=9111 ./deploy/self-hosted/deploy.sh
+```
+
+---
+
 ## 演示账号
 
 | 用户名 | 密码 | 角色 |
