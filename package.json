@@ -1,0 +1,16 @@
+{
+  "name": "wrd-iot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WRD multilingual IoT platform for industrial equipment (plasma cutter, welder, smart water tank, gas control box)",
+  "workspaces": ["server", "web"],
+  "scripts": {
+    "install:all": "npm install --workspaces",
+    "dev:server": "npm --prefix server run dev",
+    "dev:web": "npm --prefix web run dev",
+    "build:web": "npm --prefix web run build",
+    "start": "npm --prefix server run start",
+    "build": "npm --prefix web run build",
+    "serve": "npm run build && npm run start"
+  }
+}
