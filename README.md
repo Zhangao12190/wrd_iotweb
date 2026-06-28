@@ -102,6 +102,7 @@ docker compose up -d --build      # 打开 http://localhost:4000
 
 ### 部署 / Deploy
 
+- **自托管服务器 + Docker** [`deploy/self-hosted/DEPLOY.md`](deploy/self-hosted/DEPLOY.md):在自有 Linux 服务器上一键部署(如 `http://<IP>:9111`)。**注意:TCP 端口最大 65535,不能使用 91111**。
 - **腾讯云(推荐)** [`deploy/tencent/DEPLOY-TENCENT.md`](deploy/tencent/DEPLOY-TENCENT.md):
   - **CloudBase 云托管 + GitHub 自动部署** ⭐:用现成 Dockerfile 部署,自动分配公网 HTTPS 域名、原生支持 WebSocket、无访问缩容到 0;配好 3 个 GitHub Secrets 后,**每次推送自动重新部署,固定 URL 直接预览**。
   - 轻量应用服务器 Lighthouse + Docker:便宜的固定服务器方案。

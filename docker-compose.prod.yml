@@ -1,0 +1,21 @@
+# Production compose — map host port to the app (container listens on 4000).
+# Usage:
+#   export HOST_PORT=9111
+#   export JWT_SECRET=$(openssl rand -hex 32)
+#   docker compose -f docker-compose.prod.yml up -d --build
+services:
+  app:
+    build: .
+    image: wrd-iot:latest
+    ports:
+      - "${HOST_PORT:-9111}:4000"
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET before starting}
+      SIM_INTERVAL_MS: "${SIM_INTERVAL_MS:-4000}"
+      # SIMULATOR: "off"
+    volumes:
+      - wrd-data:/data
+    restart: unless-stopped
+
+volumes:
+  wrd-data:

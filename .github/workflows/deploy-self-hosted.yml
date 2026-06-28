@@ -1,0 +1,72 @@
+name: Deploy to Self-Hosted Server
+
+# 通过 SSH 将应用部署到自托管 Linux 服务器（Docker Compose）。
+# 需要在 GitHub Secrets 中配置: SSH_HOST, SSH_USER, SSH_PRIVATE_KEY
+# 可选 Variable: DEPLOY_HOST_PORT (默认 9111)
+on:
+  workflow_dispatch:
+    inputs:
+      host_port:
+        description: "宿主机对外端口（须 ≤ 65535，不能用 91111）"
+        required: false
+        default: "9111"
+  push:
+    branches:
+      - main
+
+env:
+  APP_DIR: /opt/wrd-iot
+  DEPLOY_HOST_PORT: ${{ inputs.host_port || vars.DEPLOY_HOST_PORT || '9111' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check required secrets
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          missing=""
+          [ -z "$SSH_HOST" ] && missing="$missing SSH_HOST"
+          [ -z "$SSH_USER" ] && missing="$missing SSH_USER"
+          [ -z "$SSH_PRIVATE_KEY" ] && missing="$missing SSH_PRIVATE_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::缺少 GitHub Secrets:$missing 。请在 Settings -> Secrets and variables -> Actions 添加后重试。"
+            exit 1
+          fi
+          if [ "${{ env.DEPLOY_HOST_PORT }}" -gt 65535 ] 2>/dev/null || [ "${{ env.DEPLOY_HOST_PORT }}" -lt 1 ] 2>/dev/null; then
+            echo "::error::DEPLOY_HOST_PORT=${{ env.DEPLOY_HOST_PORT }} 无效（TCP 端口范围 1–65535）。"
+            exit 1
+          fi
+          echo "Deploy target: $SSH_USER@$SSH_HOST:${{ env.DEPLOY_HOST_PORT }}"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script_stop: true
+          command_timeout: 25m
+          script: |
+            set -euo pipefail
+            export HOST_PORT="${{ env.DEPLOY_HOST_PORT }}"
+            export APP_DIR="${{ env.APP_DIR }}"
+            export REPO_URL="https://github.com/${{ github.repository }}.git"
+            export BRANCH="main"
+            if [ ! -f "$APP_DIR/deploy/self-hosted/deploy.sh" ]; then
+              curl -fsSL "https://raw.githubusercontent.com/${{ github.repository }}/main/deploy/self-hosted/deploy.sh" -o /tmp/deploy-wrd.sh
+              chmod +x /tmp/deploy-wrd.sh
+              /tmp/deploy-wrd.sh
+            else
+              bash "$APP_DIR/deploy/self-hosted/deploy.sh"
+            fi
+            curl -fsS "http://127.0.0.1:${HOST_PORT}/api/health" && echo " — health OK"
+
+      - name: Print access URL
+        run: |
+          echo "部署完成: http://${{ secrets.SSH_HOST }}:${{ env.DEPLOY_HOST_PORT }}"
