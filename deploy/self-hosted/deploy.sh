@@ -9,9 +9,16 @@ set -euo pipefail
 
 HOST_PORT="${HOST_PORT:-9111}"
 APP_DIR="${APP_DIR:-/opt/wrd-iot}"
-REPO_URL="${REPO_URL:-https://github.com/Zhangao12190/wrd_iotweb.git}"
+REPO_SLUG="${REPO_SLUG:-Zhangao12190/wrd_iotweb}"
 BRANCH="${BRANCH:-main}"
 COMPOSE_FILE="${COMPOSE_FILE:-docker-compose.prod.yml}"
+
+# Private repos cannot use raw.githubusercontent.com; clone with optional GITHUB_TOKEN.
+if [ -n "${GITHUB_TOKEN:-}" ]; then
+  REPO_URL="${REPO_URL:-https://${GITHUB_TOKEN}@github.com/${REPO_SLUG}.git}"
+else
+  REPO_URL="${REPO_URL:-https://github.com/${REPO_SLUG}.git}"
+fi
 
 if [ "$HOST_PORT" -lt 1 ] || [ "$HOST_PORT" -gt 65535 ]; then
   echo "错误: HOST_PORT=$HOST_PORT 无效。TCP 端口范围是 1–65535（91111 超出上限）。"
@@ -43,7 +50,13 @@ if [ -d "$APP_DIR/.git" ]; then
   git -C "$APP_DIR" pull origin "$BRANCH"
 else
   echo "克隆仓库到 $APP_DIR"
-  git clone --branch "$BRANCH" "$REPO_URL" "$APP_DIR"
+  if ! git clone --branch "$BRANCH" "$REPO_URL" "$APP_DIR"; then
+    echo ""
+    echo "git clone 失败。若仓库为私有，请设置 GitHub Personal Access Token 后重试:"
+    echo "  export GITHUB_TOKEN=<你的 token>"
+    echo "  $0"
+    exit 1
+  fi
 fi
 
 cat >"$APP_DIR/.env.prod" <<EOF

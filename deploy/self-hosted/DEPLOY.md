@@ -20,21 +20,28 @@
 
 ## 方式一：一键脚本（推荐）
 
-SSH 登录服务器后执行：
+> **注意**：本仓库为**私有仓库**，`curl raw.githubusercontent.com/...` 会返回 **404**，请用下面的 `git clone` 方式。
+
+SSH 或腾讯云网页终端登录服务器后执行：
 
 ```bash
-# 安装 git（如未安装）
+# 安装 git、curl（如未安装）
 sudo apt-get update && sudo apt-get install -y git curl
 
-# 下载并运行部署脚本
-curl -fsSL https://raw.githubusercontent.com/Zhangao12190/wrd_iotweb/main/deploy/self-hosted/deploy.sh -o /tmp/deploy-wrd.sh
-chmod +x /tmp/deploy-wrd.sh
+# 克隆代码（私有仓库需 GitHub Token，见下方说明）
+sudo git clone https://github.com/Zhangao12190/wrd_iotweb.git /opt/wrd-iot
+cd /opt/wrd-iot
+sudo chmod +x deploy/self-hosted/deploy.sh
+sudo HOST_PORT=9111 ./deploy/self-hosted/deploy.sh
+```
 
-# 默认端口 9111
-sudo HOST_PORT=9111 /tmp/deploy-wrd.sh
+**私有仓库克隆**：在 [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) 生成 token（勾选 `repo`），然后：
 
-# 或指定其他合法端口
-sudo HOST_PORT=11111 /tmp/deploy-wrd.sh
+```bash
+export GITHUB_TOKEN=ghp_xxxxxxxx
+sudo git clone "https://${GITHUB_TOKEN}@github.com/Zhangao12190/wrd_iotweb.git" /opt/wrd-iot
+cd /opt/wrd-iot
+sudo -E HOST_PORT=9111 GITHUB_TOKEN="$GITHUB_TOKEN" ./deploy/self-hosted/deploy.sh
 ```
 
 脚本会：安装 Docker（如缺失）→ 克隆/更新代码到 `/opt/wrd-iot` → 生成 `JWT_SECRET` → `docker compose` 构建并启动。
@@ -44,10 +51,11 @@ sudo HOST_PORT=11111 /tmp/deploy-wrd.sh
 ## 方式二：手动 Docker Compose
 
 ```bash
-sudo apt-get update && sudo apt-get install -y git docker.io docker-compose-v2
-sudo systemctl enable --now docker
+sudo apt-get update && sudo apt-get install -y git curl
+curl -fsSL https://get.docker.com | sudo sh
 
-sudo git clone https://github.com/Zhangao12190/wrd_iotweb.git /opt/wrd-iot
+# 私有仓库：把 YOUR_TOKEN 换成 GitHub PAT
+sudo git clone "https://YOUR_TOKEN@github.com/Zhangao12190/wrd_iotweb.git" /opt/wrd-iot
 cd /opt/wrd-iot
 
 export HOST_PORT=9111
