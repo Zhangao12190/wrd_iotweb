@@ -170,22 +170,47 @@ sudo chmod +x deploy/self-hosted/deploy.sh
 sudo SKIP_CLONE=1 HOST_PORT=9111 ./deploy/self-hosted/deploy.sh
 ```
 
-### 方案 B：从你本地电脑上传（最稳）
+### 方案 B：从你本地电脑上传（最稳，强烈推荐）
 
-在你**本地电脑**（能访问 GitHub 的机器）执行：
+GitHub 从国内服务器经常连不上，**请用本地上传，不要继续试 git clone**。
 
+#### 在你本地电脑执行
+
+**Mac / Linux：**
 ```bash
 git clone https://github.com/Zhangao12190/wrd_iotweb.git
 scp -r wrd_iotweb root@122.51.242.230:/opt/wrd-iot
 ```
 
-服务器上：
+**Windows（PowerShell）：**
+```powershell
+git clone https://github.com/Zhangao12190/wrd_iotweb.git
+scp -r wrd_iotweb root@122.51.242.230:/opt/wrd-iot
+```
+
+若 `scp` 不可用，可先打 zip 再上传：
+```bash
+# 本地
+zip -r wrd.zip wrd_iotweb
+scp wrd.zip root@122.51.242.230:/tmp/
+```
+
+#### 在服务器执行
 
 ```bash
-cd /opt/wrd-iot
 curl -fsSL https://get.docker.com | sudo sh
-sudo chmod +x deploy/self-hosted/deploy.sh
-sudo SKIP_CLONE=1 HOST_PORT=9111 ./deploy/self-hosted/deploy.sh
+
+# 若上传的是文件夹
+cd /opt/wrd-iot
+sudo chmod +x deploy/self-hosted/install-from-upload.sh
+sudo SKIP_CLONE=1 HOST_PORT=9111 ./deploy/self-hosted/install-from-upload.sh
+
+# 若上传的是 zip
+sudo apt-get install -y unzip
+sudo chmod +x /opt/wrd-iot/deploy/self-hosted/install-from-upload.sh 2>/dev/null || true
+sudo HOST_PORT=9111 bash -c 'cd /opt && unzip -qo /tmp/wrd.zip && \
+  DIR=$(find /opt -maxdepth 1 -type d -name "wrd_iotweb*" | head -1) && \
+  mv "$DIR" /opt/wrd-iot && cd /opt/wrd-iot && SKIP_CLONE=1 HOST_PORT=9111 ./deploy/self-hosted/deploy.sh'
 ```
 
 ### 方案 C：临时公开仓库 + 国内镜像

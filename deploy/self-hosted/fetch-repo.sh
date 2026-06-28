@@ -19,12 +19,17 @@ mkdir -p "$(dirname "$APP_DIR")"
 setup_ssh_443() {
   mkdir -p "$HOME/.ssh"
   chmod 700 "$HOME/.ssh"
+  if [ -f "$SSH_KEY" ]; then
+    chmod 600 "$SSH_KEY"
+  fi
   if ! grep -q 'Host github.com' "$HOME/.ssh/config" 2>/dev/null; then
-    cat >>"$HOME/.ssh/config" <<'EOF'
+    cat >>"$HOME/.ssh/config" <<EOF
 Host github.com
   Hostname ssh.github.com
   Port 443
   User git
+  IdentityFile ${SSH_KEY}
+  IdentitiesOnly yes
 EOF
     chmod 600 "$HOME/.ssh/config"
   fi
