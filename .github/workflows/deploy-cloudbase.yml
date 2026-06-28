@@ -21,6 +21,7 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -30,9 +31,27 @@ jobs:
         with:
           node-version: "20"
 
+      # 提前校验密钥是否配置,避免 CLI 在密钥为空时退化成交互式扫码授权而卡死。
+      - name: Check required secrets
+        env:
+          TCB_SECRET_ID: ${{ secrets.TCB_SECRET_ID }}
+          TCB_SECRET_KEY: ${{ secrets.TCB_SECRET_KEY }}
+          TCB_ENV_ID: ${{ secrets.TCB_ENV_ID }}
+        run: |
+          missing=""
+          [ -z "$TCB_SECRET_ID" ] && missing="$missing TCB_SECRET_ID"
+          [ -z "$TCB_SECRET_KEY" ] && missing="$missing TCB_SECRET_KEY"
+          [ -z "$TCB_ENV_ID" ] && missing="$missing TCB_ENV_ID"
+          if [ -n "$missing" ]; then
+            echo "::error::缺少以下 GitHub Secrets:$missing 。请在 Settings -> Secrets and variables -> Actions 添加后重试。"
+            exit 1
+          fi
+          echo "All required secrets present."
+
       - name: Install CloudBase CLI
         run: npm install -g @cloudbase/cli
 
+      # 非交互式密钥登录(CI 环境)。密钥为空时上一步已拦截。
       - name: Login CloudBase
         run: tcb login --apiKeyId "${{ secrets.TCB_SECRET_ID }}" --apiKey "${{ secrets.TCB_SECRET_KEY }}"
 
