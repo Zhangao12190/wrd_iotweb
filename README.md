@@ -100,12 +100,14 @@ docker compose up -d --build      # 打开 http://localhost:4000
 
 镜像为单端口生产部署:同一进程提供 API + WebSocket 并托管前端,SQLite 数据持久化在 `wrd-data` 卷。
 
-### 部署到 AWS / Deploy to AWS
+### 部署 / Deploy
 
-详见 [`deploy/aws/DEPLOY-AWS.md`](deploy/aws/DEPLOY-AWS.md):
-- **方案 A**:EC2 + Docker(最简单、最省钱);
-- **方案 B**:ECS Fargate + ALB + EFS(托管、免运维);
-- **全球访问**:前置 CloudFront(全球 CDN,支持 WebSocket)+ Route 53 自定义域名。
+- **腾讯云(推荐)** [`deploy/tencent/DEPLOY-TENCENT.md`](deploy/tencent/DEPLOY-TENCENT.md):
+  - **CloudBase 云托管 + GitHub 自动部署** ⭐:用现成 Dockerfile 部署,自动分配公网 HTTPS 域名、原生支持 WebSocket、无访问缩容到 0;配好 3 个 GitHub Secrets 后,**每次推送自动重新部署,固定 URL 直接预览**。
+  - 轻量应用服务器 Lighthouse + Docker:便宜的固定服务器方案。
+- **AWS** [`deploy/aws/DEPLOY-AWS.md`](deploy/aws/DEPLOY-AWS.md):EC2+Docker / ECS Fargate+ALB+EFS / CloudFront 全球访问。
+
+> 自动部署工作流见 [`.github/workflows/deploy-cloudbase.yml`](.github/workflows/deploy-cloudbase.yml)。
 
 ### 演示账号 / Demo accounts
 

@@ -1,0 +1,52 @@
+name: Deploy to Tencent CloudBase Run
+
+# 每次推送到这些分支,自动把最新代码部署到腾讯云云托管(CloudBase Run)。
+# 服务有固定的公网 HTTPS 域名,部署后用同一个 URL 即可看到最新改动。
+on:
+  push:
+    branches:
+      - main
+      - "cursor/iot-platform-6ada"
+  workflow_dispatch: {}
+
+# 需要在 GitHub 仓库 Settings -> Secrets and variables -> Actions 添加:
+#   TCB_SECRET_ID   腾讯云 API 密钥 SecretId
+#   TCB_SECRET_KEY  腾讯云 API 密钥 SecretKey
+#   TCB_ENV_ID      云开发环境 ID (在 CloudBase 控制台创建并查看)
+# 可选变量(Variables):
+#   TCB_SERVICE     云托管服务名,默认 wrd-iot
+env:
+  SERVICE_NAME: ${{ vars.TCB_SERVICE || 'wrd-iot' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install CloudBase CLI
+        run: npm install -g @cloudbase/cli
+
+      - name: Login CloudBase
+        run: tcb login --apiKeyId "${{ secrets.TCB_SECRET_ID }}" --apiKey "${{ secrets.TCB_SECRET_KEY }}"
+
+      # CloudBase 会自动识别根目录 Dockerfile,在云端构建镜像并部署为容器型服务。
+      # 容器监听 4000 端口(与 server 默认 PORT 一致)。
+      - name: Deploy container service
+        run: >-
+          tcb cloudrun deploy
+          -e "${{ secrets.TCB_ENV_ID }}"
+          -s "${{ env.SERVICE_NAME }}"
+          --port 4000
+          --force
+
+      - name: Print access hint
+        run: |
+          echo "部署完成。公网访问地址形如: https://${SERVICE_NAME}-<随机串>.<地域>.app.tcloudbase.com"
+          echo "也可在 CloudBase 控制台 -> 云托管 -> ${SERVICE_NAME} -> 服务设置 中查看默认域名。"
