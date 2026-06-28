@@ -1,0 +1,19 @@
+# Local / single-host production run:  docker compose up -d  ->  http://localhost:4000
+services:
+  app:
+    build: .
+    image: wrd-iot:latest
+    ports:
+      - "4000:4000"
+    environment:
+      # CHANGE THIS in production
+      JWT_SECRET: "change-me-to-a-long-random-string"
+      SIM_INTERVAL_MS: "4000"
+      # set SIMULATOR=off once real devices push to /api/ingest
+      # SIMULATOR: "off"
+    volumes:
+      - wrd-data:/data
+    restart: unless-stopped
+
+volumes:
+  wrd-data:

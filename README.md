@@ -92,6 +92,21 @@ npm --prefix server run start # 打开 http://localhost:4000
 
 > 首次启动会自动初始化 SQLite 并写入演示数据。
 
+### Docker(单端口一键运行)/ One-command Docker
+
+```bash
+docker compose up -d --build      # 打开 http://localhost:4000
+```
+
+镜像为单端口生产部署:同一进程提供 API + WebSocket 并托管前端,SQLite 数据持久化在 `wrd-data` 卷。
+
+### 部署到 AWS / Deploy to AWS
+
+详见 [`deploy/aws/DEPLOY-AWS.md`](deploy/aws/DEPLOY-AWS.md):
+- **方案 A**:EC2 + Docker(最简单、最省钱);
+- **方案 B**:ECS Fargate + ALB + EFS(托管、免运维);
+- **全球访问**:前置 CloudFront(全球 CDN,支持 WebSocket)+ Route 53 自定义域名。
+
 ### 演示账号 / Demo accounts
 
 | 用户名 | 密码 | 角色 |
